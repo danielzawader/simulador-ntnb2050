@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="description" content="Simulador de venda antecipada do Tesouro IPCA+ 2050 (NTN-B 2050).">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}*,*::before,*::after{box-sizing:inherit}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Simulador NTN-B 2050</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one mobile-first column; header with the bond's numbers, chart, simulator card, scenarios, assumptions. */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --ink: #15211f;
+  --muted: #5b6965;
+  --line: #dbe2df;
+  --accent: #0d6b5c;
+  --accent-soft: #d8ece7;
+  --gold: #b7791f;
+  --good: #0f7a4a;
+  --bad: #b4372c;
+  --band: rgba(13, 107, 92, .14);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1514; --surface: #172120; --ink: #e8efed; --muted: #9aaba6; --line: #2a3735;
+    --accent: #4fc2a9; --accent-soft: #1d3a34; --gold: #e3a94a; --good: #5fd29a; --bad: #f08a7e;
+    --band: rgba(79, 194, 169, .16); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1514; --surface: #172120; --ink: #e8efed; --muted: #9aaba6; --line: #2a3735;
+  --accent: #4fc2a9; --accent-soft: #1d3a34; --gold: #e3a94a; --good: #5fd29a; --bad: #f08a7e;
+  --band: rgba(79, 194, 169, .16); color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 720px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; display: flex; flex-direction: column; gap: 20px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 7vw, 40px); line-height: 1.08; margin: 4px 0 8px; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: 21px; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 60ch; }
+.num { font-variant-numeric: tabular-nums; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin-top: 16px; }
+.fact { background: var(--surface); padding: 12px 14px; min-width: 0; }
+.fact .k { font-size: 12px; color: var(--muted); }
+.fact .v { font-family: var(--font-display); font-size: clamp(18px, 4.6vw, 24px); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fact .v.acc { color: var(--accent); }
+@media (max-width: 420px) { .facts { grid-template-columns: 1fr 1fr; } .fact:first-child { grid-column: 1 / -1; } }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.note { font-size: 13px; color: var(--muted); }
+.seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; align-self: flex-start; }
+.seg button { font: inherit; font-size: 13px; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.seg button:focus-visible, .chips button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chart { position: relative; touch-action: pan-y; min-height: 260px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--font-body); font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.tip { position: absolute; top: 0; left: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: 6px 10px; font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tip b { font-weight: 700; }
+.tip .d { color: var(--muted); font-size: 12px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 3px; border-radius: 2px; background: var(--accent); }
+.sw.dash { background: repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 7px); }
+.sw.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gold); }
+
+.ctrls { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+@media (max-width: 560px) { .ctrls { grid-template-columns: 1fr; } }
+.ctrl { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ctrl label { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+.ctrl label output { font-family: var(--font-display); font-size: 17px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.ctrl .hint { font-size: 12px; color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 2px 0; }
+.money { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 0 10px; }
+.money span { color: var(--muted); font-size: 15px; }
+.money input { font: inherit; font-size: 17px; font-weight: 600; border: 0; background: transparent; color: var(--ink); padding: 9px 6px; width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.chips button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.pnl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.part { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; background: var(--bg); }
+.part .k, .tot .k { font-size: 13px; font-weight: 600; color: var(--ink); }
+.part .kk { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.pv { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 6vw, 30px); line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pp { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tot { grid-column: 1 / -1; border-radius: 12px; padding: 14px 16px; background: var(--ink); color: var(--bg); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.tot .k { color: var(--bg); opacity: .8; width: 100%; }
+.tv { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 8vw, 38px); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tp { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 380px) { .pnl { grid-template-columns: 1fr; } }
+.result { background: var(--accent-soft); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+.result .k { font-size: 13px; color: var(--muted); }
+.result .big { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 8vw, 42px); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.result .sub { font-size: 15px; font-variant-numeric: tabular-nums; }
+.pos { color: var(--good); }
+.neg { color: var(--bad); }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; font-variant-numeric: tabular-nums; }
+.row:last-child { border-bottom: 0; }
+.row .l { color: var(--muted); }
+.row.total { font-weight: 700; font-size: 15px; }
+.row.total .l { color: var(--ink); }
+.compare { font-size: 14px; color: var(--muted); }
+.compare b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.tblwrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { text-align: right; font-size: 12px; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { text-align: right; padding: 9px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+tr.sel td { background: var(--accent-soft); font-weight: 600; }
+@media (max-width: 480px) { .c-pu { display: none; } th, td { padding-inline: 6px; } }
+ul.prem { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
+ul.prem b { color: var(--ink); font-weight: 600; }
+.foot { font-size: 12px; color: var(--muted); }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Tesouro IPCA+ 2050 · taxas de <span id="c-data">—</span></div>
+    <h1>Simulador NTN-B 2050</h1>
+    <p class="lead">Veja como a taxa desse título se comportou desde 2012 e simule quanto você ganharia vendendo antes do vencimento, de acordo com a taxa na venda, o prazo e a inflação.</p>
+    <div class="facts">
+      <div class="fact"><div class="k">Taxa de compra hoje</div><div class="v acc" id="c-taxa">—</div></div>
+      <div class="fact"><div class="k">Preço unitário (PU)</div><div class="v" id="c-pu">—</div></div>
+      <div class="fact"><div class="k">Vencimento</div><div class="v">15/08/2050</div></div>
+    </div>
+  </header>
+
+  <section class="card" aria-labelledby="h-graf">
+    <h2 id="h-graf">A taxa ao longo do tempo</h2>
+    <div class="seg" role="group" aria-label="Período do gráfico">
+      <button type="button" id="p-long" aria-pressed="true">Desde 2012</button>
+      <button type="button" id="p-short" aria-pressed="false">Últimos 2 meses</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="chart"><div class="tip" id="tip" hidden></div></div>
+    <p class="note" id="chart-note"></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-sim">
+    <h2 id="h-sim">Simule sua venda</h2>
+    <div class="ctrls">
+      <div class="ctrl">
+        <label for="valor">Valor investido</label>
+        <div class="money"><span>R$</span><input id="valor" inputmode="numeric" value="100.000" autocomplete="off"></div>
+      </div>
+      <div class="ctrl">
+        <label for="compra">Taxa na compra <output id="o-compra" for="compra"></output></label>
+        <input type="range" id="compra" min="5" max="9.5" step="0.01" value="7.42">
+        <div class="hint" id="c-hint">—</div>
+      </div>
+      <div class="ctrl">
+        <label for="venda">Taxa na venda <output id="o-venda" for="venda"></output></label>
+        <input type="range" id="venda" min="4" max="9.5" step="0.05" value="7">
+        <div class="chips" id="chips-venda"></div>
+      </div>
+      <div class="ctrl">
+        <label for="prazo">Vender daqui a <output id="o-prazo" for="prazo"></output></label>
+        <input type="range" id="prazo" min="1" max="120" step="1" value="12">
+        <div class="hint" id="h-prazo"></div>
+      </div>
+      <div class="ctrl">
+        <label for="ipca">IPCA médio ao ano <output id="o-ipca" for="ipca"></output></label>
+        <input type="range" id="ipca" min="2" max="8" step="0.1" value="4">
+        <div class="hint">Inflação que você espera até a venda</div>
+      </div>
+    </div>
+
+    <div class="pnl" aria-live="polite">
+      <div class="part">
+        <div class="k" id="k-carry">Rendimento do título</div>
+        <div class="pv" id="r-carry">—</div>
+        <div class="pp" id="r-carry-p">—</div>
+        <div class="kk">o que o título rende só pelo tempo, com a taxa da compra</div>
+      </div>
+      <div class="part">
+        <div class="k" id="k-mtm">Variação do PU</div>
+        <div class="pv" id="r-mtm">—</div>
+        <div class="pp" id="r-mtm-p">—</div>
+        <div class="kk">o ganho ou a perda porque a taxa mudou até a venda</div>
+      </div>
+      <div class="tot">
+        <div class="k">Resultado bruto total</div>
+        <div class="tv" id="r-tot">—</div>
+        <div class="tp" id="r-tot-p">—</div>
+      </div>
+    </div>
+
+    <div class="rows" id="r-rows"></div>
+
+    <div class="result">
+      <div class="k">Você receberia na venda, já descontados IR e custódia</div>
+      <div class="big" id="r-liq">—</div>
+      <div class="sub" id="r-ganho">—</div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-cen">
+    <h2 id="h-cen">Outras taxas de venda no mesmo prazo</h2>
+    <p class="note" id="cen-note"></p>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Taxa na venda</th><th class="c-pu">PU na venda</th><th>Ganho líquido</th><th>% no período</th></tr></thead>
+        <tbody id="cen-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-prem">
+    <h2 id="h-prem">Como a conta é feita</h2>
+    <ul class="prem">
+      <li><b>Taxa caiu, preço sobe.</b> Quando a taxa de mercado cai depois da compra, o preço do título sobe, e quem vende antes do vencimento leva esse ganho. Se a taxa subir, o preço cai e a venda antecipada pode dar prejuízo.</li>
+      <li><b>Levando até 2050</b> você recebe exatamente IPCA + a taxa da compra, sem depender do sobe e desce do preço.</li>
+      <li><b>Taxa na venda</b> é a taxa de resgate que aparece no Tesouro Direto no dia da venda. Ela costuma ficar uns 0,12 p.p. acima da taxa de compra do mesmo dia.</li>
+      <li><b>Custódia da B3:</b> 0,20% ao ano sobre o valor do título, descontada na venda.</li>
+      <li><b>Imposto de Renda</b> sobre o ganho: 22,5% até 6 meses, 20% até 1 ano, 17,5% até 2 anos e 15% acima disso.</li>
+      <li>O prazo conta 21 dias úteis por mês. A inflação é a que você escolher acima, não uma previsão.</li>
+    </ul>
+    <p class="foot" id="c-foot">Simulação ilustrativa, sem garantia de rentabilidade e sem constituir recomendação.</p>
+  </section>
+</div>
+
+<script id="sim-config" type="application/json">{"data":"2026-11-05","titulo":"Tesouro IPCA+ 2050","vencimento":"2050-08-15","taxa_compra":7.42,"pu_compra":880.04,"taxa_venda":7.54,"pu_venda":857.13,"dias_uteis_vencimento":5954,"media_desde_2012":5.64,"pregoes_desde_2012":3594,"historico_ate":"2026-10-30","mensal":[["2012-06",4.74,4.57,4.96],["2012-07",4.54,4.4,4.81],["2012-08",4.39,4.39,4.52],["2012-09",4.43,4.37,4.48],["2012-10",4.03,3.97,4.37],["2012-11",4.08,4.02,4.23],["2012-12",3.99,3.94,4.06],["2013-01",3.95,3.78,3.96],["2013-02",4.1,3.99,4.25],["2013-03",4.42,4.02,4.42],["2013-04",4.48,4.39,4.77],["2013-05",4.88,4.34,4.97],["2013-06",5.27,4.75,5.88],["2013-07",5.5,5.2,5.72],["2013-08",5.78,5.39,5.78],["2013-09",5.96,5.69,5.96],["2013-10",5.79,5.79,5.98],["2013-11",6.43,5.84,6.43],["2013-12",6.52,6.4,6.73],["2014-01",7.06,6.52,7.07],["2014-02",6.57,6.57,7.08],["2014-03",6.72,6.67,7.03],["2014-04",6.58,6.57,6.74],["2014-05",6.04,6.04,6.52],["2014-06",6.13,5.93,6.22],["2014-07",6.06,5.78,6.17],["2014-08",5.53,5.53,6.2],["2014-09",6.26,5.32,6.26],["2014-10",6.09,5.54,6.26],["2014-11",5.72,5.72,6.43],["2014-12",6.17,5.78,6.41],["2015-01",5.92,5.85,6.18],["2015-02",6.3,6.0,6.42],["2015-03",6.48,6.12,6.61],["2015-04",6.03,5.97,6.39],["2015-05",5.84,5.74,6.11],["2015-06",6.05,5.87,6.05],["2015-07",6.47,6.06,6.49],["2015-08",7.05,6.47,7.05],["2015-09",7.25,7.0,7.74],["2015-10",7.16,7.12,7.43],["2015-11",7.1,6.76,7.14],["2015-12",7.24,7.0,7.3],["2016-01",7.36,7.2,7.54],["2016-02",7.29,7.25,7.42],["2016-03",6.43,6.28,7.32],["2016-04",6.17,6.15,6.6],["2016-05",6.22,5.87,6.26],["2016-06",6.05,6.0,6.27],["2016-07",5.79,5.79,6.15],["2016-08",5.86,5.63,5.87],["2016-09",5.77,5.76,6.04],["2016-10",5.74,5.54,5.75],["2016-11",6.04,5.68,6.21],["2016-12",5.78,5.78,6.3],["2017-01",5.55,5.45,5.75],["2017-02",5.13,5.12,5.51],["2017-03",5.19,5.1,5.24],["2017-04",5.32,5.14,5.34],["2017-05",5.5,4.92,5.97],["2017-06",5.58,5.48,5.72],["2017-07",5.31,5.27,5.62],["2017-08",5.29,5.1,5.29],["2017-09",5.08,5.04,5.25],["2017-10",5.26,5.04,5.27],["2017-11",5.39,5.22,5.39],["2017-12",5.41,5.38,5.47],["2018-01",5.04,5.0,5.41],["2018-02",5.04,5.04,5.17],["2018-03",5.18,5.0,5.18],["2018-04",5.23,5.12,5.3],["2018-05",5.6,5.23,5.63],["2018-06",5.87,5.6,5.94],["2018-07",5.71,5.65,5.82],["2018-08",5.84,5.55,5.89],["2018-09",5.95,5.77,5.99],["2018-10",5.13,5.02,5.95],["2018-11",5.04,5.0,5.24],["2018-12",4.95,4.95,5.15],["2019-01",4.42,4.42,4.89],["2019-02",4.47,4.38,4.57],["2019-03",4.5,4.33,4.74],["2019-04",4.46,4.43,4.59],["2019-05",4.11,4.11,4.46],["2019-06",3.75,3.75,4.09],["2019-07",3.63,3.61,3.76],["2019-08",3.79,3.57,3.81],["2019-09",3.52,3.5,3.76],["2019-10",3.23,3.23,3.55],["2019-11",3.53,3.16,3.62],["2019-12",3.47,3.33,3.59],["2020-01",3.51,3.41,3.56],["2020-02",3.58,3.33,3.58],["2020-03",4.5,3.45,5.16],["2020-04",4.35,4.12,4.78],["2020-05",4.31,4.23,4.68],["2020-06",4.21,4.08,4.35],["2020-07",3.67,3.67,4.12],["2020-08",3.96,3.66,4.03],["2020-09",4.3,3.94,4.36],["2020-10",4.3,4.17,4.37],["2020-11",4.2,4.11,4.32],["2020-12",3.78,3.78,4.17],["2021-01",3.96,3.74,4.12],["2021-02",4.13,3.88,4.2],["2021-03",4.43,4.0,4.6],["2021-04",4.39,4.33,4.46],["2021-05",4.38,4.28,4.59],["2021-06",4.38,4.18,4.4],["2021-07",4.42,4.22,4.42],["2021-08",4.77,4.39,4.97],["2021-09",4.96,4.73,4.97],["2021-10",5.66,4.95,5.66],["2021-11",5.28,5.26,5.59],["2021-12",5.39,5.01,5.39],["2022-01",5.69,5.41,5.74],["2022-02",5.68,5.55,5.8],["2022-03",5.57,5.49,5.94],["2022-04",5.76,5.51,5.79],["2022-05",5.84,5.7,5.91],["2022-06",6.0,5.78,6.02],["2022-07",6.26,5.98,6.35],["2022-08",5.98,5.77,6.25],["2022-09",5.79,5.7,5.97],["2022-10",5.88,5.58,5.9],["2022-11",6.02,5.77,6.28],["2022-12",6.13,5.9,6.45],["2023-01",6.44,6.11,6.44],["2023-02",6.42,6.22,6.53],["2023-03",6.2,6.16,6.5],["2023-04",6.02,5.94,6.25],["2023-05",5.7,5.64,5.98],["2023-06",5.48,5.48,5.71],["2023-07",5.41,5.36,5.57],["2023-08",5.55,5.28,5.55],["2023-09",5.83,5.59,5.99],["2023-10",5.9,5.8,6.05],["2023-11",5.77,5.7,5.97],["2023-12",5.49,5.45,5.77],["2024-01",5.68,5.47,5.68],["2024-02",5.72,5.62,5.72],["2024-03",5.85,5.69,5.89],["2024-04",6.09,5.87,6.11],["2024-05",6.13,6.07,6.3],["2024-06",6.42,6.13,6.45],["2024-07",6.3,6.19,6.49],["2024-08",6.22,5.91,6.3],["2024-09",6.39,6.15,6.48],["2024-10",6.7,6.34,6.73],["2024-11",7.01,6.56,7.01],["2024-12",7.4,6.61,7.44],["2025-01",7.4,7.29,7.65],["2025-02",7.57,7.23,7.57],["2025-03",7.39,7.3,7.49],["2025-04",7.24,7.24,7.56],["2025-05",7.05,6.97,7.28],["2025-06",6.98,6.98,7.19],["2025-07",7.15,6.86,7.23],["2025-08",7.18,7.05,7.29],["2025-09",7.18,7.07,7.33],["2025-10",7.19,7.12,7.39],["2025-11",6.98,6.96,7.21],["2025-12",7.13,6.88,7.24],["2026-01",7.1,7.07,7.34],["2026-02",6.94,6.94,7.21],["2026-03",7.22,6.98,7.31],["2026-04",7.1,6.96,7.22],["2026-05",7.27,7.08,7.33],["2026-06",7.61,7.26,7.64],["2026-07",7.7,7.44,7.74],["2026-08",7.4,7.39,7.61],["2026-09",7.07,7.07,7.54],["2026-10",7.43,6.48,7.74]],"diario":[["2026-09-01",7.4],["2026-09-02",7.3],["2026-09-03",7.28],["2026-09-04",7.28],["2026-09-08",7.25],["2026-09-09",7.33],["2026-09-10",7.36],["2026-09-11",7.22],["2026-09-14",7.3],["2026-09-15",7.24],["2026-09-16",7.23],["2026-09-17",7.19],["2026-09-18",7.19],["2026-09-21",7.17],["2026-09-22",7.21],["2026-09-23",7.16],["2026-09-24",7.16],["2026-09-25",7.14],["2026-09-28",7.18],["2026-09-29",7.03],["2026-09-30",6.93],["2026-10-01",7.06],["2026-10-02",7.06],["2026-10-05",6.32],["2026-10-06",6.51],["2026-10-07",6.62],["2026-10-08",6.65],["2026-10-09",6.48],["2026-10-13",6.57],["2026-10-14",6.62],["2026-10-15",6.74],["2026-10-16",6.74],["2026-10-19",6.66],["2026-10-20",6.7],["2026-10-21",6.68],["2026-10-22",6.63],["2026-10-23",6.48],["2026-10-26",7.64],["2026-10-27",7.16],["2026-10-28",7.16],["2026-10-29",7.13],["2026-10-30",7.27],["2026-11-05",7.42]]}</script>
+<script>
+(function () {
+  const CFG = JSON.parse(document.getElementById('sim-config').textContent);
+  const DATA = { mon: CFG.mensal, day: CFG.diario };
+  const DU0 = CFG.dias_uteis_vencimento, MEDIA = CFG.media_desde_2012, HOJE = CFG.data;
+  const VNA0 = CFG.pu_compra * Math.pow(1 + CFG.taxa_compra / 100, DU0 / 252);
+  const fmtD = d => d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4);
+  const mesesN = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const pct = v => v.toFixed(2).replace('.', ',') + '%';
+  const brl = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const brl0 = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+  const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '');
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+
+  /* ---------- Chart ---------- */
+  let mode = 'long';
+  const chart = $('chart'), tip = $('tip');
+  function series() {
+    if (mode === 'long') {
+      return DATA.mon.map(([m, c, lo, hi]) => ({ t: Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1, 15), label: mesesN[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4), v: c, lo, hi }));
+    }
+    return DATA.day.map(([d, v]) => ({ t: Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)), label: d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4), v, hoje: d === HOJE }));
+  }
+  function draw() {
+    chart.querySelectorAll('svg').forEach(n => n.remove());
+    const pts = series();
+    const W = Math.max(300, chart.clientWidth), H = mode === 'long' ? 280 : 260;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Gráfico da taxa da NTN-B 2050' });
+    chart.insertBefore(svg, tip);
+    const vals = pts.flatMap(p => p.lo != null ? [p.lo, p.hi] : [p.v]);
+    let y0 = Math.min(...vals, mode === 'long' ? MEDIA : Infinity), y1 = Math.max(...vals);
+    if (mode === 'long') { y0 = Math.floor(y0) - 0.25; y1 = Math.ceil(y1) + 0.25; } else { y0 = Math.floor(y0 * 4) / 4 - 0.1; y1 = Math.ceil(y1 * 4) / 4 + 0.1; }
+    const step = mode === 'long' ? 1 : 0.25;
+    const ticks = []; for (let v = Math.ceil(y0 / step) * step; v <= y1 + 1e-9; v += step) ticks.push(Math.round(v * 100) / 100);
+    const probe = el('text', {}, svg); probe.textContent = '7,25%'; const ml = probe.getComputedTextLength() + 10; probe.remove();
+    const mr = 48, mt = 10, mb = 26;
+    const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    const X = t => ml + (t - t0) / (t1 - t0) * (W - ml - mr);
+    const Y = v => mt + (y1 - v) / (y1 - y0) * (H - mt - mb);
+    const grid = css('--line'), muted = css('--muted'), acc = css('--accent'), gold = css('--gold');
+    ticks.forEach(v => {
+      el('line', { x1: ml, x2: W - mr, y1: Y(v), y2: Y(v), stroke: grid, 'stroke-width': 1 }, svg);
+      const t = el('text', { x: ml - 8, y: Y(v), 'text-anchor': 'end', 'dominant-baseline': 'middle' }, svg); t.textContent = pct(v).replace(',00', '');
+    });
+    // x labels
+    if (mode === 'long') {
+      const y0y = new Date(t0).getUTCFullYear() + 1, y1y = new Date(t1).getUTCFullYear();
+      const every = W < 460 ? 4 : W < 640 ? 2 : 1;
+      for (let yy = y0y; yy <= y1y; yy++) { if ((yy - y0y) % every) continue; const t = el('text', { x: X(Date.UTC(yy, 0, 1)), y: H - 6, 'text-anchor': 'middle' }, svg); t.textContent = yy; }
+    } else {
+      const marks = [Date.UTC(2026, 8, 1), Date.UTC(2026, 9, 1), Date.UTC(2026, 10, 1)];
+      marks.forEach(m => { if (m < t0 || m > t1) return; const t = el('text', { x: X(m), y: H - 6, 'text-anchor': 'middle' }, svg); t.textContent = mesesN[new Date(m).getUTCMonth()] + '/26'; });
+    }
+    if (mode === 'long') {
+      let d = ''; pts.forEach((p, i) => { d += (i ? 'L' : 'M') + X(p.t) + ',' + Y(p.hi); });
+      for (let i = pts.length - 1; i >= 0; i--) d += 'L' + X(pts[i].t) + ',' + Y(pts[i].lo);
+      el('path', { d: d + 'Z', fill: css('--band'), stroke: 'none' }, svg);
+      el('line', { x1: ml, x2: W - mr, y1: Y(MEDIA), y2: Y(MEDIA), stroke: muted, 'stroke-dasharray': '4 4', 'stroke-width': 1.2 }, svg);
+    }
+    let path = ''; pts.forEach((p, i) => { path += (i ? 'L' : 'M') + X(p.t).toFixed(1) + ',' + Y(p.v).toFixed(1); });
+    el('path', { d: path, fill: 'none', stroke: acc, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    const last = pts[pts.length - 1];
+    el('circle', { cx: X(last.t), cy: Y(last.v), r: 4.5, fill: mode === 'short' ? gold : acc, stroke: css('--surface'), 'stroke-width': 2 }, svg);
+    const lt = el('text', { x: X(last.t) + 8, y: Y(last.v), 'dominant-baseline': 'middle', 'font-weight': 700, fill: css('--ink') }, svg); lt.textContent = pct(last.v);
+
+    const cross = el('line', { y1: mt, y2: H - mb, stroke: muted, 'stroke-width': 1, visibility: 'hidden' }, svg);
+    const dot = el('circle', { r: 5, fill: acc, stroke: css('--surface'), 'stroke-width': 2, visibility: 'hidden' }, svg);
+    const hit = el('rect', { x: ml, y: 0, width: W - ml - mr, height: H - mb, fill: 'transparent' }, svg);
+    const show = ev => {
+      const r = svg.getBoundingClientRect(), k = W / r.width;
+      const px = (ev.clientX - r.left) * k;
+      const tt = t0 + (Math.min(Math.max(px, ml), W - mr) - ml) / (W - ml - mr) * (t1 - t0);
+      let best = pts[0]; for (const p of pts) if (Math.abs(p.t - tt) < Math.abs(best.t - tt)) best = p;
+      cross.setAttribute('x1', X(best.t)); cross.setAttribute('x2', X(best.t)); cross.setAttribute('visibility', 'visible');
+      dot.setAttribute('cx', X(best.t)); dot.setAttribute('cy', Y(best.v)); dot.setAttribute('fill', best.hoje ? gold : acc); dot.setAttribute('visibility', 'visible');
+      tip.innerHTML = '';
+      const a = document.createElement('div'); a.className = 'd'; a.textContent = best.label + (best.hoje ? ' · hoje' : ''); tip.appendChild(a);
+      const b = document.createElement('div'); b.append('IPCA + '); const bb = document.createElement('b'); bb.textContent = pct(best.v); b.appendChild(bb); tip.appendChild(b);
+      if (best.lo != null) { const c = document.createElement('div'); c.className = 'd'; c.textContent = 'no mês: de ' + pct(best.lo) + ' a ' + pct(best.hi); tip.appendChild(c); }
+      tip.hidden = false;
+      const cw = chart.clientWidth, sx = X(best.t) / k, sy = Y(best.v) / k, tw = tip.offsetWidth, th = tip.offsetHeight;
+      tip.style.left = Math.min(Math.max(0, sx - tw / 2), cw - tw) + 'px';
+      tip.style.top = (sy - th - 12 < 0 ? sy + 14 : sy - th - 12) + 'px';
+    };
+    const hide = () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); };
+    hit.addEventListener('pointermove', show);
+    hit.addEventListener('pointerdown', show);
+    hit.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hide(); });
+
+    const lg = $('legend'); lg.innerHTML = '';
+    const item = (cls, txt) => { const s = document.createElement('span'); const w = document.createElement('i'); w.className = 'sw ' + cls; s.append(w, txt); lg.appendChild(s); };
+    if (mode === 'long') {
+      item('', 'Taxa no fim de cada mês');
+      const b = document.createElement('span'); const w = document.createElement('i'); w.className = 'sw'; w.style.cssText = 'height:9px;background:' + css('--band'); b.append(w, 'Mínima e máxima do mês'); lg.appendChild(b);
+      item('dash', 'Média desde 2012');
+      $('chart-note').textContent = 'NTN-B 2050 com juros semestrais, taxa de compra no último pregão de cada mês, de jun/2012 a out/2026. Toque no gráfico para ver cada mês.';
+    } else {
+      item('', 'Tesouro IPCA+ 2050'); item('dot', 'Hoje');
+      $('chart-note').textContent = 'Tesouro IPCA+ 2050, taxa de compra em cada pregão desde 01/09/2026. Toque no gráfico para ver cada dia.';
+    }
+  }
+  $('p-long').addEventListener('click', () => { mode = 'long'; $('p-long').setAttribute('aria-pressed', 'true'); $('p-short').setAttribute('aria-pressed', 'false'); tip.hidden = true; draw(); });
+  $('p-short').addEventListener('click', () => { mode = 'short'; $('p-short').setAttribute('aria-pressed', 'true'); $('p-long').setAttribute('aria-pressed', 'false'); tip.hidden = true; draw(); });
+
+  /* ---------- Simulator ---------- */
+  const aliq = dias => dias <= 180 ? 0.225 : dias <= 360 ? 0.20 : dias <= 720 ? 0.175 : 0.15;
+  function sim(valor, rc, rv, meses, ipca) {
+    const pu0 = VNA0 / Math.pow(1 + rc / 100, DU0 / 252);
+    const h = Math.min(Math.round(meses * 21), DU0);
+    const vna = VNA0 * Math.pow(1 + ipca / 100, meses / 12);
+    const pu = vna / Math.pow(1 + rv / 100, (DU0 - h) / 252);
+    const q = valor / pu0, bruto = q * pu, dias = meses * 30.4375;
+    const cust = 0.002 * dias / 365 * (valor + bruto) / 2;
+    const base = bruto - valor - cust, a = aliq(dias), ir = Math.max(0, base) * a;
+    const liq = bruto - cust - ir, ganho = liq - valor;
+    const anual = Math.pow(liq / valor, 12 / meses) - 1;
+    return { pu0, pu, bruto, cust, ir, a, liq, ganho, pctT: ganho / valor, anual, real: (1 + anual) / (1 + ipca / 100) - 1 };
+  }
+  const valorEl = $('valor');
+  const readValor = () => { const v = Number(String(valorEl.value).replace(/\D/g, '')); return v > 0 ? v : 0; };
+  valorEl.addEventListener('input', () => { const v = readValor(); valorEl.value = v ? v.toLocaleString('pt-BR') : ''; update(); });
+
+  const presets = [7.0, 6.5, 6.0, MEDIA];
+  const chips = $('chips-venda');
+  presets.forEach(p => { const b = document.createElement('button'); b.type = 'button'; b.textContent = p === MEDIA ? 'Média ' + pct(p) : pct(p); b.dataset.v = p; b.addEventListener('click', () => { $('venda').value = p; update(); }); chips.appendChild(b); });
+
+  const mesTxt = m => m < 12 ? m + (m === 1 ? ' mês' : ' meses') : (m % 12 === 0 ? (m / 12) + (m === 12 ? ' ano' : ' anos') : Math.floor(m / 12) + (m < 24 ? ' ano' : ' anos') + ' e ' + (m % 12) + (m % 12 === 1 ? ' mês' : ' meses'));
+  const dataVenda = m => { const d = new Date(Date.UTC(+HOJE.slice(0, 4), +HOJE.slice(5, 7) - 1 + m, 5)); return mesesN[d.getUTCMonth()] + '/' + d.getUTCFullYear(); };
+  const row = (l, v, cls) => { const r = document.createElement('div'); r.className = 'row' + (cls ? ' ' + cls : ''); const a = document.createElement('span'); a.className = 'l'; a.textContent = l; const b = document.createElement('span'); b.textContent = v; r.append(a, b); return r; };
+
+  function update() {
+    const valor = readValor(), rc = +$('compra').value, rv = +$('venda').value, meses = +$('prazo').value, ipca = +$('ipca').value;
+    $('o-compra').textContent = 'IPCA + ' + pct(rc);
+    $('o-venda').textContent = 'IPCA + ' + pct(rv);
+    $('o-prazo').textContent = mesTxt(meses);
+    $('o-ipca').textContent = ipca.toFixed(1).replace('.', ',') + '%';
+    $('h-prazo').textContent = 'Venda em ' + dataVenda(meses);
+    chips.querySelectorAll('button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.v - rv) < 0.001));
+    if (!valor) { ['r-carry','r-carry-p','r-mtm','r-mtm-p','r-tot','r-tot-p','r-liq'].forEach(i => $(i).textContent = '—'); $('r-ganho').textContent = 'Informe o valor investido'; return; }
+    const s = sim(valor, rc, rv, meses, ipca);
+    const c0 = sim(valor, rc, rc, meses, ipca);
+    const carry = c0.bruto - valor, mtm = s.bruto - c0.bruto, tot = s.bruto - valor;
+    const money = v => sgn(v) + brl(Math.abs(v));
+    const perc = v => sgn(v) + pct(Math.abs(v / valor * 100));
+    const paint = (id, v, txt) => { const e = $(id); e.textContent = txt; e.classList.toggle('pos', v > 0.005); e.classList.toggle('neg', v < -0.005); };
+    $('k-carry').textContent = 'Rendimento IPCA + ' + pct(rc);
+    $('k-mtm').textContent = 'Variação do PU (' + pct(rc) + ' → ' + pct(rv) + ')';
+    paint('r-carry', carry, money(carry)); paint('r-carry-p', carry, perc(carry));
+    paint('r-mtm', mtm, money(mtm)); paint('r-mtm-p', mtm, perc(mtm));
+    $('r-tot').textContent = money(tot); $('r-tot-p').textContent = perc(tot) + ' no período';
+    $('r-liq').textContent = brl(s.liq);
+    const g = $('r-ganho'); g.textContent = '';
+    const sp = document.createElement('span'); sp.className = s.ganho >= 0 ? 'pos' : 'neg';
+    sp.textContent = sgn(s.ganho) + brl(Math.abs(s.ganho)) + ' (' + sgn(s.pctT) + pct(Math.abs(s.pctT * 100)) + ' no período)';
+    g.append(sp, ' · ' + pct(s.anual * 100) + ' ao ano, IPCA + ' + pct(s.real * 100));
+    const rows = $('r-rows'); rows.innerHTML = '';
+    rows.append(
+      row('PU na compra', brl(s.pu0)),
+      row('PU na venda (' + dataVenda(meses) + ')', brl(s.pu)),
+      row('Valor bruto na venda', brl(s.bruto)),
+      row('Custódia B3 (0,20% a.a.)', '−' + brl(s.cust)),
+      row('Imposto de Renda (' + (s.a * 100).toLocaleString('pt-BR') + '% sobre o ganho)', '−' + brl(s.ir))
+    );
+
+    $('cen-note').textContent = 'Venda em ' + dataVenda(meses) + ' (' + mesTxt(meses) + '), com ' + brl0(valor) + ' investidos a IPCA + ' + pct(rc) + ' e IPCA de ' + ipca.toFixed(1).replace('.', ',') + '% ao ano.';
+    const list = [rc + 0.5, rc + 0.12, 7.0, 6.5, 6.0, MEDIA, rv].map(v => Math.round(v * 100) / 100);
+    const uniq = [...new Set(list)].sort((a, b) => b - a);
+    const tb = $('cen-body'); tb.innerHTML = '';
+    uniq.forEach(v => {
+      const c = sim(valor, rc, v, meses, ipca);
+      const tr = document.createElement('tr'); if (Math.abs(v - rv) < 0.001) tr.className = 'sel';
+      let nome = pct(v);
+      if (Math.abs(v - MEDIA) < 0.001) nome += ' (média)';
+      else if (Math.abs(v - (rc + 0.12)) < 0.001) nome += ' (taxa igual)';
+      else if (Math.abs(v - (rc + 0.5)) < 0.001) nome += ' (taxa sobe)';
+      [nome, brl(c.pu), sgn(c.ganho) + brl0(Math.abs(c.ganho)), sgn(c.pctT) + pct(Math.abs(c.pctT * 100))].forEach((t, i) => {
+        const td = document.createElement('td'); td.textContent = t; if (i === 1) td.className = 'c-pu'; if (i >= 2) td.className = c.ganho >= 0 ? 'pos' : 'neg'; tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+  }
+  ['compra', 'venda', 'prazo', 'ipca'].forEach(id => $(id).addEventListener('input', update));
+
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(draw, 120); });
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  $('c-data').textContent = fmtD(HOJE);
+  $('c-taxa').textContent = 'IPCA + ' + pct(CFG.taxa_compra);
+  $('c-pu').textContent = brl(CFG.pu_compra);
+  $('c-hint').textContent = 'Hoje: IPCA + ' + pct(CFG.taxa_compra) + ' (venda a ' + pct(CFG.taxa_venda) + ')';
+  $('compra').value = CFG.taxa_compra;
+  $('c-foot').textContent = 'Simulação ilustrativa, sem garantia de rentabilidade e sem constituir recomendação. Taxas e preços do site do Tesouro Direto em ' + fmtD(HOJE) + '; histórico do Tesouro Transparente (NTN-B 2050 com juros semestrais até ' + fmtD(CFG.historico_ate) + '). A média desde 2012 é de IPCA + ' + pct(MEDIA) + ', em ' + CFG.pregoes_desde_2012.toLocaleString('pt-BR') + ' pregões.';
+  draw(); update();
+})();
+</script>
+
+</body>
+</html>
